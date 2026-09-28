@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EventEase — College Event Registration System</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <a href="index.html" class="brand">🎓 EventEase</a>
+        <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="#events-section">Events</a></li>
+            <li id="auth-nav">
+                <button class="btn btn-secondary btn-sm" onclick="openModal('login-modal')">Login</button>
+                <button class="btn btn-primary btn-sm" onclick="openModal('register-modal')">Register</button>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Hero Section -->
+        <section class="hero">
+            <h1>Discover College Events</h1>
+            <p>Register. Participate. Enjoy.</p>
+            <div class="login-options" id="hero-actions">
+                <button class="btn btn-primary" onclick="openStudentLogin()">Student Login</button>
+                <button class="btn btn-secondary" onclick="openOrganizerLogin()">Organizer Login</button>
+            </div>
+        </section>
+
+        <!-- Events Section -->
+        <section id="events-section">
+            <h2>Available College Events</h2>
+            <div class="grid" id="events-grid">
+                <p>Loading events...</p>
+            </div>
+        </section>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('login-modal')">&times;</span>
+            <h2 id="login-title">Account Login</h2>
+            <br>
+            <div id="login-alert" class="alert"></div>
+            
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-type">I am a:</label>
+                    <select id="login-type" class="form-control">
+                        <option value="STUDENT">Student</option>
+                        <option value="ORGANIZER">Organizer</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="login-email">Email Address</label>
+                    <input type="email" id="login-email" class="form-control" required placeholder="name@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" class="form-control" required placeholder="Enter password">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Log In</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Registration Modal -->
+    <div id="register-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('register-modal')">&times;</span>
+            <h2>Create an Account</h2>
+            <br>
+            <div id="register-alert" class="alert"></div>
+
+            <form id="register-form">
+                <div class="form-group">
+                    <label for="reg-role">Register As:</label>
+                    <select id="reg-role" class="form-control" onchange="toggleRegFields()">
+                        <option value="STUDENT">Student</option>
+                        <option value="ORGANIZER">Organizer</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="reg-name">Full Name / Club Name</label>
+                    <input type="text" id="reg-name" class="form-control" required placeholder="Enter name">
+                </div>
+                <div class="form-group">
+                    <label for="reg-email">Email Address</label>
+                    <input type="email" id="reg-email" class="form-control" required placeholder="name@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="reg-dept">Department</label>
+                    <input type="text" id="reg-dept" class="form-control" required placeholder="e.g. Computer Science">
+                </div>
+                <div class="form-group" id="year-group">
+                    <label for="reg-year">Academic Year</label>
+                    <input type="number" id="reg-year" class="form-control" min="1" max="5" value="1">
+                </div>
+                <div class="form-group">
+                    <label for="reg-password">Password</label>
+                    <input type="password" id="reg-password" class="form-control" required placeholder="Create password">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Create Account</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2026 EventEase — College Event Registration System.</p>
+    </footer>
+
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            renderNav();
+            loadEvents();
+
+            document.getElementById("login-form").addEventListener("submit", (e) => {
+                e.preventDefault();
+                const type = document.getElementById("login-type").value;
+                const email = document.getElementById("login-email").value;
+                const password = document.getElementById("login-password").value;
+
+                if (type === "STUDENT") {
+                    loginStudent(email, password);
+                } else {
+                    loginOrganizer(email, password);
+                }
+            });
+
+            document.getElementById("register-form").addEventListener("submit", (e) => {
+                e.preventDefault();
+                const role = document.getElementById("reg-role").value;
+                const name = document.getElementById("reg-name").value;
+                const email = document.getElementById("reg-email").value;
+                const department = document.getElementById("reg-dept").value;
+                const password = document.getElementById("reg-password").value;
+
+                if (role === "STUDENT") {
+                    const year = parseInt(document.getElementById("reg-year").value);
+                    registerStudentAccount({ name, email, department, year, password });
+                } else {
+                    registerOrganizerAccount({ name, email, department, password });
+                }
+            });
+        });
+
+        function openStudentLogin() {
+            document.getElementById("login-type").value = "STUDENT";
+            openModal("login-modal");
+        }
+
+        function openOrganizerLogin() {
+            document.getElementById("login-type").value = "ORGANIZER";
+            openModal("login-modal");
+        }
+
+        function toggleRegFields() {
+            const role = document.getElementById("reg-role").value;
+            const yearGroup = document.getElementById("year-group");
+            yearGroup.style.display = role === "STUDENT" ? "block" : "none";
+        }
+
+        function renderNav() {
+            const user = getUserSession();
+            const authNav = document.getElementById("auth-nav");
+            const heroActions = document.getElementById("hero-actions");
+
+            if (user) {
+                const targetPage = user.role === "STUDENT" ? "student.html" : "organizer.html";
+                authNav.innerHTML = `
+                    <span>Hello, <strong>${user.name}</strong></span>
+                    <a href="${targetPage}" class="btn btn-primary btn-sm">Dashboard</a>
+                    <button class="btn btn-secondary btn-sm" onclick="logout()">Logout</button>
+                `;
+                heroActions.innerHTML = `
+                    <a href="${targetPage}" class="btn btn-primary">Go to Dashboard</a>
+                `;
+            }
+        }
+
+        async function loadEvents() {
+            const events = await fetchAllEvents();
+            const grid = document.getElementById("events-grid");
+
+            if (events.length === 0) {
+                grid.innerHTML = "<p>No events available right now.</p>";
+                return;
+            }
+
+            grid.innerHTML = events.map(ev => {
+                let badgeClass = "badge-open";
+                if (ev.status === "FULL") badgeClass = "badge-full";
+                if (ev.status === "COMPLETED") badgeClass = "badge-completed";
+
+                return `
+                    <div class="card">
+                        <div>
+                            <div class="card-header">
+                                <span class="card-category">${ev.category}</span>
+                                <span class="badge ${badgeClass}">${ev.status}</span>
+                            </div>
+                            <h3 class="card-title">${ev.title}</h3>
+                            <p class="card-body">${ev.description.substring(0, 90)}${ev.description.length > 90 ? '...' : ''}</p>
+                            <div class="card-info">📅 <strong>Date:</strong> ${ev.eventDate}</div>
+                            <div class="card-info">📍 <strong>Venue:</strong> ${ev.venue}</div>
+                            <div class="card-info">👥 <strong>Seats Left:</strong> ${ev.availableSeats} / ${ev.maxSeats}</div>
+                            <div class="card-info">🏢 <strong>Organizer:</strong> ${ev.organizerName}</div>
+                        </div>
+                        <div class="card-footer">
+                            <a href="event.html?id=${ev.id}" class="btn btn-secondary btn-sm">View Details</a>
+                            ${ev.status === "OPEN" ? `<button class="btn btn-primary btn-sm" onclick="registerForEvent(${ev.id})">Register</button>` : `<button class="btn btn-disabled btn-sm" disabled>${ev.status}</button>`}
+                        </div>
+                    </div>
+                `;
+            }).join("");
+        }
+    </script>
+</body>
+</html>

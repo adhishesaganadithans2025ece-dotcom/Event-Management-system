@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Details — EventEase</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <a href="index.html" class="brand">🎓 EventEase</a>
+        <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="index.html#events-section">All Events</a></li>
+            <li id="event-nav-user"></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <div id="event-detail-container">
+            <p>Loading event details...</p>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 EventEase — College Event Registration System.</p>
+    </footer>
+
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const eventId = urlParams.get("id");
+
+            const user = getUserSession();
+            const navUser = document.getElementById("event-nav-user");
+            if (user) {
+                const targetPage = user.role === "STUDENT" ? "student.html" : "organizer.html";
+                navUser.innerHTML = `
+                    <a href="${targetPage}" class="btn btn-primary btn-sm">Dashboard</a>
+                    <button class="btn btn-secondary btn-sm" onclick="logout()">Logout</button>
+                `;
+            } else {
+                navUser.innerHTML = `<a href="index.html" class="btn btn-primary btn-sm">Login</a>`;
+            }
+
+            if (!eventId) {
+                document.getElementById("event-detail-container").innerHTML = "<p>Invalid event ID.</p>";
+                return;
+            }
+
+            await loadDetails(eventId, user);
+        });
+
+        async function loadDetails(eventId, user) {
+            const ev = await fetchEventDetails(eventId);
+            const container = document.getElementById("event-detail-container");
+
+            if (!ev) {
+                container.innerHTML = "<p>Event not found.</p>";
+                return;
+            }
+
+            let userRegistered = false;
+            if (user && user.role === "STUDENT") {
+                const regs = await fetchStudentRegistrations(user.id);
+                userRegistered = regs.some(r => r.eventId === ev.id && r.status === "REGISTERED");
+            }
+
+            let badgeClass = "badge-open";
+            if (ev.status === "FULL") badgeClass = "badge-full";
+            if (ev.status === "COMPLETED") badgeClass = "badge-completed";
+
+            let actionButton = "";
+            if (user && user.role === "STUDENT") {
+                if (userRegistered) {
+                    actionButton = `<button class="btn btn-disabled" disabled>Already Registered</button>
+                                    <button class="btn btn-danger" style="margin-left:0.5rem;" onclick="cancelRegistration(${ev.id})">Cancel Registration</button>`;
+                } else if (ev.status === "OPEN") {
+                    actionButton = `<button class="btn btn-primary" onclick="registerForEvent(${ev.id})">Register Now</button>`;
+                } else if (ev.status === "FULL") {
+                    actionButton = `<button class="btn btn-disabled" disabled>Event Full</button>`;
+                } else {
+                    actionButton = `<button class="btn btn-disabled" disabled>Registration Closed</button>`;
+                }
+            } else if (user && user.role === "ORGANIZER") {
+                actionButton = `<a href="organizer.html" class="btn btn-primary">Manage Events</a>`;
+            } else {
+                actionButton = `<a href="index.html" class="btn btn-primary">Login as Student to Register</a>`;
+            }
+
+            container.innerHTML = `
+                <div class="form-card" style="max-width: 800px; margin: 1rem auto;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                        <span class="card-category">${ev.category}</span>
+                        <span class="badge ${badgeClass}">${ev.status}</span>
+                    </div>
+
+                    <h1 style="font-size: 2rem; margin-bottom: 1rem;">${ev.title}</h1>
+                    <p style="font-size: 1.1rem; color: #334155; margin-bottom: 2rem; white-space: pre-line;">${ev.description}</p>
+
+                    <div style="background-color: #f8fafc; padding: 1.5rem; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 2rem;">
+                        <div class="card-info" style="font-size: 1rem;">📅 <strong>Event Date:</strong> ${ev.eventDate}</div>
+                        <div class="card-info" style="font-size: 1rem;">📍 <strong>Venue:</strong> ${ev.venue}</div>
+                        <div class="card-info" style="font-size: 1rem;">🏢 <strong>Organizer:</strong> ${ev.organizerName}</div>
+                        <div class="card-info" style="font-size: 1rem;">🪑 <strong>Total Maximum Seats:</strong> ${ev.maxSeats}</div>
+                        <div class="card-info" style="font-size: 1rem;">📝 <strong>Registered Seats:</strong> ${ev.registeredSeats}</div>
+                        <div class="card-info" style="font-size: 1rem;">✅ <strong>Available Seats:</strong> ${ev.availableSeats}</div>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; align-items: center;">
+                        ${actionButton}
+                        <a href="index.html#events-section" class="btn btn-secondary">Back to Events</a>
+                    </div>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
